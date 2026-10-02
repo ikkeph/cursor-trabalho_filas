@@ -1,0 +1,463 @@
+Explicação do código — simulador de filas de atendimento
+=========================================================
+Arquivo para acompanhar o código (visão geral de cada classe).
+Vamos preenchendo conforme revisamos os arquivos.
+
+
+cliente.py — classe Cliente
+---------------------------
+
+O que essa classe é
+    Um cliente é um registro com relógio. Ele nasce com dados fixos
+    (quem é, que tipo, quando chegou, quanto o atendimento dura) e,
+    depois, ganha dois carimbos de tempo: começou e terminou. As
+    métricas do professor (tempo de espera e tempo total) saem desses
+    carimbos.
+
+from __future__ import annotations
+    No Python 3.9 e abaixo, deixa anotações como int | None funcionarem.
+    Se o ambiente for 3.10+, essa linha é opcional.
+
+Docstring da classe
+    É um manual interno. Útil, mas longa para um trabalho de disciplina.
+    Dá para deixar 2–3 linhas.
+
+_TIPOS_PRIORITARIOS
+    Tupla de nomes que valem como prioritário. A política de atendimento
+    pergunta cliente.eh_prioritario em vez de comparar string solta em
+    vários arquivos. Os três sinônimos (prioritario, prioritaría,
+    prioritária) existem para CSV com grafia diferente.
+    Se o CSV for padronizado em "prioritario", pode ficar só essa palavra.
+
+__init__
+    1. tipo.strip().lower() — tira espaço e normaliza
+       (" Prioritário " vira "prioritário").
+    2. Três if — recusam tipo vazio, chegada negativa e duração ≤ 0.
+       O cliente inválido nem chega a existir.
+    3. self._id, _tipo, _chegada, _duracao — dados de nascimento.
+       O _ é convenção: "não mexa de fora".
+    4. _tempo_inicio_atendimento e _tempo_fim_atendimento começam None:
+       ainda não foi atendido.
+
+    O parâmetro se chama id_cliente para não sombrear a função built-in
+    id(). O atributo exposto se chama id, como no enunciado.
+
+@property
+    Cada @property é um getter. De fora você lê cliente.tipo; não
+    consegue fazer cliente.tipo = "comum" sem um setter. Isso é
+    encapsulamento.
+
+    O enunciado mostra atributos públicos. Seis properties + dois
+    métodos de registro é mais código do que o trabalho pede.
+    Duas escolas: manter (ninguém altera tempo de chegada por acidente)
+    ou simplificar para atributos públicos + só registrar_* e get_tempo_*.
+    As duas estão corretas. A segunda é mais curta.
+
+eh_prioritario
+    Atalho booleano. Uma linha, e a regra de "quem é prioritário" fica
+    num lugar só.
+
+registrar_inicio_atendimento(tempo_atual)
+    Único jeito honesto de sair da fila: grava o tick. Recusa se o tick
+    for antes da chegada.
+
+registrar_fim_atendimento(tempo_atual)
+    Só funciona se já houve início, e se o fim não é anterior ao início.
+    A simulação não deve atribuir esses tempos na mão; chama esses dois
+    métodos.
+
+get_tempo_espera / get_tempo_total_sistema
+    Fórmulas do PDF:
+        espera = início − chegada
+        tempo no sistema = fim − chegada
+    Os if ... is None impedem calcular métrica de quem ainda está na
+    fila ou no guichê. Esses números só existem para quem já foi atendido.
+
+__repr__ e __str__
+    __repr__ aparece no debugger / print da lista de clientes (detalhado).
+    __str__ é a frase curta no --verbose.
+    Não são obrigatórios, mas ajudam.
+
+Lapidações possíveis (não aplicadas)
+    1. Encurtar a docstring da classe.
+    2. Decidir se as properties valem o tamanho, ou se atributos
+       públicos bastam.
+    3. Reduzir _TIPOS_PRIORITARIOS a um único valor, se o CSV for
+       padronizado.
+    4. Tirar comentários-separador; o código já se divide sozinho.
+    Nada disso muda o comportamento da simulação.
+
+
+atendente.py — classe Atendente
+-------------------------------
+
+O que essa classe é
+    Um guichê. Ou está livre, ou está ocupado com um cliente e um
+    contador de ticks que faltam para acabar. Também acumula duas
+    estatísticas próprias: quantos clientes já fechou e por quantos
+    ticks ficou ocupado (isso vira a taxa de utilização).
+
+    O Cliente guarda os carimbos de relógio da pessoa. O Atendente
+    guarda o estado da mesa: quem está sentado e quanto falta.
+
+from __future__ import annotations / Optional / Cliente
+    Mesma história do Cliente para as anotações. Optional[Cliente]
+    significa "um Cliente ou None". Importa Cliente porque o guichê
+    segura uma referência à pessoa que está atendendo.
+
+__init__(id_atendente, tipos_atendimento=None)
+    id — número do guichê (1, 2, 3…).
+    tipos_atendimento — lista do que este guichê sabe fazer
+    (comum, tecnico…). Se vier vazia ou None, vira [] e, na prática,
+    atende todo mundo (veja pode_atender).
+    cliente_atual começa None, tempo_restante 0: mesa vazia.
+    total_clientes_atendidos e tempo_total_ocupado começam 0.
+
+esta_livre()
+    True se cliente_atual is None. É a pergunta que a Central faz
+    antes de puxar alguém da fila.
+
+pode_atender(tipo_cliente)
+    Se a lista de tipos está vazia, devolve True (faz tudo).
+    Senão, só devolve True se o tipo do cliente está na lista.
+    Hoje a Central NÃO chama esse método: todos os atendentes
+    criados na simulação atendem qualquer tipo. Código extra,
+    alinhado ao PDF, mas ainda não ligado.
+
+iniciar_atendimento(cliente, tempo_atual)
+    Recusa se já houver alguém na mesa.
+    Guarda o cliente, copia cliente.tempo_duracao para tempo_restante
+    (o relógio da mesa) e pede ao cliente para carimbar o início.
+    Daqui em diante esta_livre() é False.
+
+processar_unidade_tempo()
+    Um tick de trabalho. Se estiver livre, não faz nada (None).
+    Se estiver ocupado: soma 1 em tempo_total_ocupado, diminui 1
+    em tempo_restante. Quando restante chega a 0, chama
+    finalizar_atendimento e devolve o cliente pronto. Senão, None.
+    A Central, se receber um cliente de volta, carimba o fim
+    (registrar_fim_atendimento) e guarda nas métricas.
+
+finalizar_atendimento()
+    Tira a pessoa da mesa: incrementa total_clientes_atendidos,
+    zera cliente_atual e tempo_restante, devolve o Cliente.
+    NÃO carimba o tempo_fim no cliente — isso fica a cargo da
+    Central, que conhece o tick atual. Recusa se a mesa já estiver
+    vazia.
+
+calcular_taxa_utilizacao(tempo_total_simulacao)
+    Fórmula do PDF: (tempo_ocupado / tempo_simulado) * 100.
+    A Central hoje refaz essa conta na mão, sem chamar este método.
+    Os dois caminhos são iguais; um deles é redundante.
+
+__repr__ / __str__
+    Debug: "Livre" ou "Ocupado (Restante: N)".
+    __str__ só "Atendente 1".
+
+Lapidações possíveis (não aplicadas)
+    1. Encurtar a docstring da classe.
+    2. Ligar pode_atender na Central, ou apagar tipos_atendimento
+       se o trabalho não for usar guichês especializados.
+    3. Fazer a Central usar calcular_taxa_utilizacao em vez de
+       repetir a fórmula.
+    4. Atributos públicos (ao contrário do Cliente). Para o
+       enunciado está ok; não precisa copiar as properties.
+
+
+central.py — classe CentralAtendimento
+--------------------------------------
+
+O que essa classe é
+    O coordenador. Não atende ninguém e não é uma fila: junta as
+    peças. Tem os guichês, duas Filas da disciplina, a política
+    (FIFO ou prioridade) e as listas para métrica. A cada tick,
+    a Simulacao entrega os clientes que chegaram naquele instante
+    e a Central executa o roteiro do enunciado: enfileirar,
+    terminar atendimentos, ocupar mesas livres, anotar o tamanho
+    da fila.
+
+    Relógios: o Cliente carimba a pessoa; o Atendente conta o
+    trabalho da mesa; a Central conta o tempo do sistema
+    (tempo_decorrido) e fecha as contas no final.
+
+__init__(atendentes, politica="fifo", verbose=False)
+    Recebe a lista de Atendente já criados (a Simulacao que monta
+    os guichês). verbose liga os prints do modo detalhado.
+    criar_politica(politica) devolve o objeto FIFO ou Prioridade.
+    Sempre existem duas Filas: comum e prioritária. Em FIFO a
+    segunda fica vazia; quem decide em qual entrar / de qual sair
+    é a política, não a Central. Listas clientes_que_chegaram e
+    clientes_atendidos são histórico (list Python, permitido).
+    historico_tamanho_fila guarda o tamanho combinado a cada tick
+    (média e máximo). tempo_decorrido começa em 0.
+
+receber_cliente(cliente)
+    Anota que a pessoa chegou e pede à política para enfileirar
+    (a política chama Fila.enfileira). Se verbose, imprime chegada
+    e entrada na fila. O nome da fila no print compara
+    tipo == "prioritario" na mão; o Cliente já tem eh_prioritario.
+
+obter_proximo_cliente()
+    Pede à política o próximo (a política chama desinfileira).
+    Devolve Cliente ou None se as filas estiverem vazias.
+    A Central não decide a ordem; só pergunta.
+
+_tamanho_total_filas()
+    Soma fila_comum.tamanho() + fila_prioritaria.tamanho().
+    Um underline: método interno para média/máximo da fila e
+    para "ainda aguardando" nas métricas. Só usa a interface
+    pública da Fila (tamanho), nunca _cabeca.
+
+processar_tick(novos_clientes)
+    Um minuto do sistema, nesta ordem:
+    1. Cada cliente da lista passa por receber_cliente.
+    2. Cada atendente processar_unidade_tempo. Se devolver
+       alguém, a Central carimba o fim e guarda em
+       clientes_atendidos.
+    3. Cada mesa livre: obter_proximo_cliente e, se houver
+       gente, iniciar_atendimento no tick atual.
+    4. Anota o tamanho das filas e soma 1 em tempo_decorrido.
+
+    No mesmo tick uma mesa pode terminar e já pegar a próxima
+    pessoa (passo 2 libera, passo 3 ocupa). Quem começa agora
+    só trabalha no próximo processar_unidade_tempo.
+
+calcular_metricas()
+    Fecha as contas do PDF: chegaram / atendidos / ainda na fila;
+    espera média, min, máx; tempo médio no sistema; fila média
+    e máxima; vazão (atendidos / tempo_decorrido); utilização
+    de cada guichê em %. Se ninguém foi atendido, os tempos vão
+    a zero em vez de dividir por zero. A utilização é calculada
+    na mão com tempo_total_ocupado; o Atendente já tem
+    calcular_taxa_utilizacao. Devolve um dicionário; o Relatorio
+    que imprime.
+
+Lapidações possíveis (não aplicadas)
+    1. Atributos públicos; se quiser o mesmo padrão do Cliente
+       e do Atendente, _ + @property.
+    2. Verbose usar cliente.eh_prioritario.
+    3. Usar atendente.calcular_taxa_utilizacao(...).
+    4. Métricas por tipo (comum vs prioritário) o PDF pede na
+       comparação de políticas; hoje o dicionário é só global.
+    5. pode_atender do Atendente não é chamado aqui.
+
+
+politicas.py — quem decide a ordem da fila
+------------------------------------------
+
+O que esse arquivo é
+    A Central não escolhe quem entra em qual fila nem quem sai
+    primeiro. Ela pergunta para um objeto de política. Trocar
+    --politica fifo por --politica prioridade troca só esse
+    objeto. As duas Filas continuam as mesmas.
+
+    PoliticaAtendimento é o contrato (os dois métodos que toda
+    política tem de ter). As classes FIFO e Prioridade
+    implementam o contrato. criar_politica lê a string do argparse
+    e devolve o objeto certo.
+
+PoliticaAtendimento
+    enfileirar(cliente, fila_comum, fila_prioritaria)
+        Coloca a pessoa em alguma fila (Fila.enfileira).
+    proximo_cliente(...)
+        Tira a próxima pessoa (Fila.desinfileira) ou None.
+    raise NotImplementedError: se alguém instanciar a classe
+        base por engano, quebra na hora, não falha calado.
+
+PoliticaFIFO
+    enfileirar: todo mundo vai para fila_comum. fila_prioritaria
+        fica vazia. Ordem de chegada.
+    proximo_cliente: se a comum não está vazia, desinfileira;
+        senão None. Ignora a fila prioritária.
+
+PoliticaPrioridade
+    __init__: max_prioritarios = 3 (o exemplo do PDF) e
+        consecutivos_prioritarios = 0 (quantos prioritários
+        saíram seguidos desde o último comum).
+    enfileirar: se o tipo é "prioritario", vai para
+        fila_prioritaria; senão (comum, tecnico, etc.) vai para
+        a comum.
+    proximo_cliente, nesta ordem:
+        1. As duas vazias → None.
+        2. Já saíram 3 prioritários seguidos E há comum
+           esperando → zera o contador e tira um comum.
+           (anti-starvation: o comum não espera para sempre.)
+        3. Há alguém na prioritária → tira, contador += 1.
+        4. Senão tira da comum e zera o contador.
+
+criar_politica(nome)
+    "fifo" → PoliticaFIFO. "prioridade"/"priority" →
+    PoliticaPrioridade(3). Outra string → ValueError
+    (argparse já limita as escolhas; isso é rede de segurança).
+
+Lapidações possíveis (não aplicadas; manter simples)
+    1. enfileirar usar cliente.eh_prioritario em vez de
+       comparar a string do tipo.
+    2. Não religar espiar_proximo / pode_atender.
+
+
+simulacao.py — classe Simulacao
+-------------------------------
+
+O que essa classe é
+    O motor do relógio. Não enfileira e não atende. Monta o
+    cenário (agenda de chegadas, guichês, Central) e, num for,
+    entrega a cada tick a lista de quem chegou agora. No fim
+    pede as métricas e manda o Relatorio imprimir.
+
+    O main só lê o argparse e chama Simulacao(config).executar().
+
+__init__(config)
+    Guarda a Configuracao.
+    Se veio --seed, random.seed ANTES de gerar clientes, para o
+    experimento ser repetível.
+    agenda = GeradorClientes.criar_agenda(config): dicionário
+        tick → lista de Cliente que chegam naquele instante.
+    Cria N Atendente (ids 1..N), todos generalistas (sem tipos).
+    Monta a Central com esses guichês, a string da política e
+        o verbose.
+
+executar()
+    Quantos ticks:
+        modo arquivo: último horário de chegada da agenda + 100.
+            Sobrou gente na fila? Conta como "ainda aguardando".
+            Os +100 dão uma folga para esvaziar um pouco, mas
+            NÃO é "roda até ninguém restar".
+        modo aleatorio: exatamente --tempo.
+    Se verbose, imprime [000] Simulação iniciada.
+    for t in range(tempo_limite):
+        novos = agenda.get(t, [])   # [] se ninguém chegou em t
+        central.processar_tick(novos)
+    calcular_metricas + Relatorio.exibir.
+
+    Política de fim (o PDF pede documentar): a simulação PARA
+    no tempo_limite. Quem está na fila ou no guichê não vira
+    "atendido". As métricas de espera só usam quem terminou.
+
+Lapidações possíveis (não aplicadas; manter simples)
+    1. Os +100 do modo arquivo precisam estar no README /
+       relatório, não precisa mudar o número agora.
+    2. self.atendentes na Simulacao é a mesma lista da Central;
+       dá para guardar só na Central. Cosmético.
+
+
+gerador_clientes.py — classe GeradorClientes
+-------------------------------------------
+
+O que essa classe é
+    Igual ao Relatorio: não guarda estado, só métodos estáticos.
+    Trabalho dela: transformar Configuracao numa agenda
+    {tick: [Cliente, ...]} que a Simulacao consulta a cada minuto.
+
+criar_agenda(config)
+    Se modo arquivo: lê o CSV.
+    Se modo aleatorio: sorteia chegadas.
+    Depois agrupa por tempo_chegada (setdefault). Dois clientes
+    no mesmo tick viram uma lista — o PDF pede chegadas simultâneas.
+
+_carregar_arquivo(caminho)
+    sys.exit se o caminho for vazio ou o arquivo não existir
+    (erro de CLI, não exceção para a Central tratar).
+    Ignora linha vazia, comentário # e o cabeçalho (id,...).
+    Cada linha: id, tipo, chegada, duracao → Cliente(...).
+    Linha com menos de 4 campos: pula, sem alarde.
+
+_gerar_aleatorio(config)
+    Para cada tick 0 .. tempo-1:
+        com probabilidade --prob-chegada nasce 1 cliente
+        (no máximo um por tick).
+        tipo: com --prioritarios vira "prioritario", senão "comum"
+        (no aleatório não nasce "tecnico").
+        duracao: inteiro uniforme entre tempo-min e tempo-max.
+        id: C001, C002, ...
+    O random.seed já foi plantado na Simulacao antes desta chamada.
+
+Lapidações possíveis (não aplicadas; manter simples)
+    1. CSV inválido (campo não numérico) hoje quebra no int().
+       Dá para pegar ValueError e sys.exit com mensagem; depois.
+    2. Faltam os três arquivos em dados/ (entregável do PDF).
+
+
+configuracao.py — classe Configuracao
+------------------------------------
+
+O que essa classe é
+    Um pacote com as opções do programa (modo, tempo, seed...).
+    Não simula nada. O main pede parse_args(); o resto do sistema
+    só lê config.tempo, config.politica, etc.
+
+@dataclass
+    O Python gera o __init__ sozinho a partir da lista de campos.
+    Por isso não tem self._modo nem property: é um formulário,
+    não um Cliente com ciclo de vida. Campos públicos ok.
+
+parse_args (classmethod)
+    cls = a própria Configuracao. Não precisa de instância para
+    começar: Configuracao.parse_args() lê sys.argv.
+    argparse: --help sai de graça; --modo é obrigatório;
+    --politica só fifo/prioridade; --verbose é flag (True se
+    apareceu na linha).
+    Hífen vira underline: --prob-chegada → args.prob_chegada.
+    cls(**vars(args)) joga cada argumento no campo de mesmo nome.
+    Depois validar() e devolve o objeto.
+
+validar()
+    sys.exit com mensagem (mesmo estilo do gerador):
+    atendentes > 0; modo arquivo exige --entrada;
+    no aleatorio: tempo > 0, probs em [0,1], 0 < min <= max.
+    Arquivo inexistente o gerador que pega, não aqui.
+
+Lapidações possíveis (não aplicadas; manter simples)
+    1. validar tempo_min/max também no modo arquivo? o CSV
+       traz a duração; não precisa.
+    2. O input() de "pressione ENTER" está no main.py, não aqui.
+
+
+relatorio.py — classe Relatorio
+-------------------------------
+
+O que essa classe é
+    Só imprime o dicionário que calcular_metricas devolve.
+    Sem __init__, sem atributos, um @staticmethod. Não se faz
+    Relatorio(); chama Relatorio.exibir(metricas).
+
+exibir(metricas)
+    Bloco a bloco: totais (chegaram / atendidos / ainda na fila);
+    espera global e tempo no sistema; espera por tipo (comum vs
+    prioritário); tamanho da fila e vazão; utilização de cada
+    guichê em %.
+    :.2f e :.1f só arredondam na tela; o número no dict continua
+    completo. A chave do dict tem que existir; se calcular_metricas
+    esquecer um campo, o print quebra KeyError.
+
+Lapidações possíveis (não aplicadas; manter simples)
+    1. metricas: dict no 3.8 está ok (dict[str, Any] é 3.9+).
+    2. Não precisa virar instância.
+
+
+main.py — não é classe; é a porta da rua
+----------------------------------------
+
+O que o arquivo é
+    O PDF pede: argparse + inicialização aqui; a lógica nas
+    outras classes. Três linhas úteis + o ENTER no fim.
+
+import
+    Configuracao e Simulacao. Mais nada.
+
+main()
+    1. parse_args() lê a linha de comando e valida.
+    2. Simulacao(config) monta agenda, guichês, Central.
+    3. executar() roda os ticks e imprime o relatório.
+    4. input(...) espera ENTER. Útil se der dois cliques no
+       .py e a janela fechar; atrapalha script/experimento
+       (o programa não termina sozinho).
+
+if __name__ == "__main__":
+    Só chama main() quando o arquivo é o programa
+    (python main.py). Se alguém der import main, não dispara
+    a simulação.
+
+Lapidações possíveis (não aplicadas; manter simples)
+    1. Tirar o input do ENTER, ou só usar se --verbose.
+       Facilita os experimentos do PDF.
