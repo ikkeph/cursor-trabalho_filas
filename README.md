@@ -125,6 +125,8 @@ classDiagram
     Simulacao --> Configuracao
     Simulacao --> CentralAtendimento
     Simulacao ..> GeradorClientes : cria agenda
+    GeradorClientes ..> Cliente : instancia
+    GeradorClientes ..> Configuracao : lê
     Simulacao ..> Relatorio : imprime
     CentralAtendimento --> PoliticaAtendimento
     CentralAtendimento --> Fila : comum e prioritária
