@@ -1,0 +1,7 @@
+# Cenario 1 — pequeno, da para calcular na mao (exemplo do enunciado + chegada simultanea)
+id,tipo,chegada,duracao
+1,comum,2,4
+2,prioritario,3,2
+3,comum,5,6
+4,tecnico,7,8
+5,comum,7,3

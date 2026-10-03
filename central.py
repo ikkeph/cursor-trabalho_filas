@@ -1,8 +1,9 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from cliente import Cliente
 from atendente import Atendente
 from fila import Fila
 from politicas import PoliticaAtendimento, criar_politica
+from estatisticas import Estatisticas
 
 
 class CentralAtendimento:
@@ -113,67 +114,6 @@ class CentralAtendimento:
         self._historico_tamanho_fila.append(self.tamanho_total_filas())
         self._tempo_decorrido += 1
 
-    def _resumo_espera(self, clientes: List[Cliente]) -> Tuple[float, int]:
-        """Média e máximo do tempo de espera; (0.0, 0) se a lista estiver vazia."""
-        if not clientes:
-            return 0.0, 0
-        esperas = [c.get_tempo_espera() for c in clientes]
-        return sum(esperas) / len(esperas), max(esperas)
-
     def calcular_metricas(self) -> Dict[str, Any]:
-        """Calcula todas as estatísticas finais"""
-        total_chegaram = len(self._clientes_que_chegaram)
-        total_atendidos = len(self._clientes_atendidos)
-        total_aguardando = self.tamanho_total_filas()
-
-        if total_atendidos > 0:
-            tempos_espera = [c.get_tempo_espera() for c in self._clientes_atendidos]
-            tempos_sistema = [c.get_tempo_total_sistema() for c in self._clientes_atendidos]
-
-            tempo_medio_espera = sum(tempos_espera) / total_atendidos
-            menor_tempo_espera = min(tempos_espera)
-            maior_tempo_espera = max(tempos_espera)
-            tempo_medio_sistema = sum(tempos_sistema) / total_atendidos
-        else:
-            tempo_medio_espera = 0.0
-            menor_tempo_espera = 0
-            maior_tempo_espera = 0
-            tempo_medio_sistema = 0.0
-
-        prioritarios = [c for c in self._clientes_atendidos if c.eh_prioritario]
-        comuns = [c for c in self._clientes_atendidos if not c.eh_prioritario]
-        espera_media_prioritarios, espera_max_prioritarios = self._resumo_espera(prioritarios)
-        espera_media_comuns, espera_max_comuns = self._resumo_espera(comuns)
-
-        if self._historico_tamanho_fila:
-            tamanho_medio_fila = sum(self._historico_tamanho_fila) / len(self._historico_tamanho_fila)
-            tamanho_maximo_fila = max(self._historico_tamanho_fila)
-        else:
-            tamanho_medio_fila = 0.0
-            tamanho_maximo_fila = 0
-
-        vazao = total_atendidos / self._tempo_decorrido if self._tempo_decorrido > 0 else 0.0
-
-        utilizacao_atendentes = {}
-        for atendente in self._atendentes:
-            utilizacao_atendentes[f"Atendente {atendente.id}"] = atendente.calcular_taxa_utilizacao(self._tempo_decorrido)
-
-        return {
-            "total_chegaram": total_chegaram,
-            "total_atendidos": total_atendidos,
-            "total_aguardando": total_aguardando,
-            "tempo_medio_espera": tempo_medio_espera,
-            "menor_tempo_espera": menor_tempo_espera,
-            "maior_tempo_espera": maior_tempo_espera,
-            "tempo_medio_sistema": tempo_medio_sistema,
-            "tamanho_medio_fila": tamanho_medio_fila,
-            "tamanho_maximo_fila": tamanho_maximo_fila,
-            "vazao": vazao,
-            "utilizacao_atendentes": utilizacao_atendentes,
-            "atendidos_prioritarios": len(prioritarios),
-            "atendidos_comuns": len(comuns),
-            "espera_media_prioritarios": espera_media_prioritarios,
-            "espera_max_prioritarios": espera_max_prioritarios,
-            "espera_media_comuns": espera_media_comuns,
-            "espera_max_comuns": espera_max_comuns,
-        }
+        """Delega o fechamento das contas para Estatisticas."""
+        return Estatisticas.calcular(self)

@@ -20,6 +20,11 @@ python3 main.py --modo aleatorio --tempo 1000 --prob-chegada 1.0 --seed 42
 
 # passo a passo no terminal
 python3 main.py --modo aleatorio --tempo 50 --verbose --seed 42
+
+# cenários do arquivo
+python3 main.py --modo arquivo --entrada dados/cenario1.csv --atendentes 3 --politica fifo
+python3 main.py --modo arquivo --entrada dados/cenario2.csv --atendentes 2 --politica prioridade
+python3 main.py --modo arquivo --entrada dados/cenario3.csv --atendentes 3 --politica fifo
 ```
 
 No fim o programa espera **ENTER**.
@@ -61,8 +66,11 @@ politicas.py         FIFO e prioridade
 fila.py              fila encadeada
 cliente.py / atendente.py
 gerador_clientes.py  CSV ou sorteio
+estatisticas.py      métricas do enunciado
 relatorio.py         imprime o resumo
-dados/               cenários (ainda vazios)
+dados/cenario1.csv   pequeno, calculável na mão
+dados/cenario2.csv   rajada de prioritários (anti-starvation)
+dados/cenario3.csv   carga média para experimentos
 testes/
 ```
 
@@ -70,4 +78,6 @@ testes/
 
 - No modo `arquivo`, a simulação roda até o último horário de chegada **+ 100** ticks. Quem ainda estiver na fila ou no guichê não conta como atendido.
 - No modo `aleatorio`, para no `--tempo`.
-- Pasta `dados/` e comparação formal das políticas ainda vão entrar.
+- `tecnico` entra na fila comum (só `prioritario` tem preferência).
+- Experimentos da seção 10 dão para rodar na mão com argparse, por exemplo:
+  `python3 main.py --modo aleatorio --tempo 10000 --atendentes 2 --seed 42`

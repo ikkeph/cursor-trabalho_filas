@@ -24,6 +24,7 @@ class Relatorio:
         print(f"Tamanho médio da fila          : {metricas['tamanho_medio_fila']:.2f}")
         print(f"Tamanho máximo da fila         : {metricas['tamanho_maximo_fila']}")
         print(f"Vazão do sistema               : {metricas['vazao']:.2f} clientes/tick")
+        print(f"Utilização média dos atendentes: {metricas['utilizacao_media']:.1f}%")
         print("-" * 50)
         print("Taxa de Utilização dos Atendentes:")
         for nome, util in metricas["utilizacao_atendentes"].items():
