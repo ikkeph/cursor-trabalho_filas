@@ -44,6 +44,100 @@ No fim o programa espera **ENTER**.
 | `--seed` | — | deixa o experimento repetível |
 | `--verbose` | off | imprime cada chegada e atendimento |
 
+## Diagrama de classes
+
+```mermaid
+classDiagram
+    class Configuracao {
+        +modo
+        +entrada
+        +tempo
+        +atendentes
+        +politica
+        +seed
+        +parse_args()
+        +validar()
+    }
+
+    class Simulacao {
+        +config
+        +agenda
+        +central
+        +executar()
+    }
+
+    class GeradorClientes {
+        +criar_agenda(config)
+    }
+
+    class CentralAtendimento {
+        +atendentes
+        +fila_comum
+        +fila_prioritaria
+        +receber_cliente()
+        +processar_tick()
+        +calcular_metricas()
+    }
+
+    class PoliticaAtendimento {
+        <<abstract>>
+        +enfileirar()
+        +proximo_cliente()
+    }
+
+    class PoliticaFIFO
+    class PoliticaPrioridade {
+        +max_prioritarios
+    }
+
+    class Fila {
+        +enfileira()
+        +desinfileira()
+        +vazia()
+        +cabeca()
+        +tamanho()
+    }
+
+    class Atendente {
+        +id
+        +cliente_atual
+        +esta_livre()
+        +iniciar_atendimento()
+        +processar_unidade_tempo()
+    }
+
+    class Cliente {
+        +id
+        +tipo
+        +tempo_chegada
+        +get_tempo_espera()
+        +get_tempo_total_sistema()
+    }
+
+    class Estatisticas {
+        +calcular(central)
+    }
+
+    class Relatorio {
+        +exibir(metricas)
+    }
+
+    Simulacao --> Configuracao
+    Simulacao --> CentralAtendimento
+    Simulacao ..> GeradorClientes : cria agenda
+    Simulacao ..> Relatorio : imprime
+    CentralAtendimento --> PoliticaAtendimento
+    CentralAtendimento --> Fila : comum e prioritária
+    CentralAtendimento --> Atendente
+    CentralAtendimento --> Cliente
+    CentralAtendimento ..> Estatisticas : fecha as contas
+    PoliticaFIFO --|> PoliticaAtendimento
+    PoliticaPrioridade --|> PoliticaAtendimento
+    Atendente --> Cliente : cliente atual
+```
+
+`main.py` só lê o argparse e chama `Simulacao`. A `Fila` é a da disciplina; ninguém acessa `_cabeca`.
+
 ## Políticas
 
 - **FIFO:** todo mundo na mesma fila, ordem de chegada.
