@@ -1,0 +1,120 @@
+Perguntas de defesa — simulador de filas
+========================================
+Prática no estilo do professor. Uma de cada vez.
+Não são do enunciado; são sobre o NOSSO código.
+
+
+1. No processar_tick, a Central faz várias coisas no mesmo minuto. Em que
+   ORDEM isso acontece — e por que terminar um atendimento ANTES de puxar
+   o próximo da fila, e não o contrário?
+
+2. A Central tem DUAS Fila: fila_comum e fila_prioritaria. No modo FIFO,
+   todo mundo parece entrar "na mesma fila". Quem decide em QUAL fila o
+   cliente entra e de QUAL fila ele sai? E o que acontece com a fila
+   prioritária quando a política é FIFO?
+
+3. Na prioridade, depois de três prioritários seguidos vocês forçam um
+   comum. O que acontece se, nesse momento, NÃO TIVER NENHUM COMUM na
+   fila — só mais prioritários? O sistema trava, atende o comum que não
+   existe, ou segue no prioritário?
+
+4. A simulação do modo arquivo não roda "até a fila esvaziar". Ela para
+   no último horário de chegada + 100 ticks. O que acontece com quem
+   ainda está na fila ou no guichê nesse momento? Entra nas métricas de
+   espera ou não? E por que a utilização dos atendentes no modo arquivo
+   pode parecer BAIXA mesmo com gente sendo atendida?
+
+5. O enunciado proíbe usar list, deque ou queue.Queue para a fila de
+   espera. Vocês usam a Fila da disciplina. O que a Central (e a
+   política) PODEM chamar nessa Fila? E por que seria errado, neste
+   trabalho, a Central olhar fila._cabeca para saber quem é o próximo?
+
+6. Como se calcula o TEMPO DE ESPERA e o TEMPO TOTAL NO SISTEMA de um
+   cliente? Em que CLASSE está a fórmula, e em que momento esses números
+   entram no relatório — no tick, ou só no fim?
+
+7. Quem GRAVA cada um desses três tempos?
+   tempo_chegada — tempo_inicio_atendimento — tempo_fim_atendimento
+   Qual classe escreve cada um, e em que método?
+
+8. O enunciado cita três tipos: comum, prioritário e TÉCNICO. No modo
+   aleatório vocês só nascem comum e prioritario. No CSV pode vir
+   tecnico. Na política de prioridade, o técnico entra em QUAL fila?
+   Ele fura a fila igual o prioritário, ou é tratado como comum? Onde
+   isso está definido no código — comparação de string solta, ou alguma
+   coisa no Cliente?
+
+9. Dois clientes no CSV com o MESMO tempo_chegada (chegada simultânea).
+   O gerador põe os dois na mesma lista daquele tick. No processar_tick,
+   os dois passam por receber_cliente ANTES de qualquer mesa puxar gente.
+   Se só tem 1 atendente livre, os dois entram na fila e só um senta
+   neste tick — ou um é atendido "na hora" e o outro nem chega a
+   enfileirar? Quem senta primeiro: a ordem do arquivo, ou a política?
+
+10. Nos experimentos vocês usam a MESMA --seed 42 com 1, 2, 3, 4 e 5
+    atendentes. O que a seed trava, exatamente? A ordem dos atendentes,
+    ou a AGENDA DE CHEGADAS (quem chega, quando, de que tipo, quanto
+    dura)? Por que isso permite comparar "só o número de guichês" e não
+    duas demandas diferentes?
+
+11. O PDF manda o main.py ser fino: argparse e inicialização, lógica nas
+    classes. O que cada um faz hoje: main.py, Configuracao.parse_args /
+    validar, Simulacao.executar? Se o professor perguntar "cadê o
+    argparse?", em QUAL ARQUIVO você aponta?
+
+12. No fim do executar, a Simulacao chama central.calcular_metricas() e
+    depois Relatorio.exibir. Se o professor abrir o central.py, o
+    calcular_metricas tem umas três linhas. Onde está a conta de
+    verdade? Qual a diferença de papel entre Central, Estatisticas e
+    Relatorio?
+
+13. Com a MESMA demanda (seed 42, 10 000 ticks, ~3042 clientes), 1
+    atendente deixa espera na casa dos milhares e utilização 100%. Com
+    2, a espera cai para ~2,5 ticks e a utilização vai a ~76%. Com 3, 4,
+    5 a espera já está perto de zero e a utilização só cai. Qual
+    configuração vocês defenderiam como MELHOR COMPROMISSO entre
+    qualidade de atendimento e uso dos recursos — e por que NÃO é
+    "quanto mais atendente, melhor"?
+
+14. No processar_tick, o tamanho da fila entra no histórico DEPOIS de
+    sentar quem estava livre. ("Sentar" = iniciar_atendimento, sair da
+    fila e ir para o guichê.) Um cliente que SAIU DA FILA E SENTOU neste
+    mesmo tick conta naquele historico_tamanho_fila.append(...) ou já
+    não conta? E um que CHEGOU E NÃO SENTOU — conta? O que isso faz com
+    a "fila média": ela é "fila no fim do minuto" ou "fila no pior
+    momento do minuto"?
+
+15. Cliente com tempo_duracao = 2 começa no tick t (iniciar_atendimento(t)).
+    Em quais ticks o processar_unidade_tempo roda para ele? Em qual tick
+    a Central carimba o FIM? A espera dele é t − chegada ou (t+1) −
+    chegada?
+
+16. random.seed(config.seed) roda no __init__ da Simulacao, ANTES de
+    criar_agenda. Se alguém pusesse o seed DEPOIS de criar a agenda, o
+    --seed 42 ainda deixaria FIFO e prioridade com os MESMOS clientes?
+    Por quê?
+
+17. No modo aleatório nasce NO MÁXIMO UM cliente por tick. No modo
+    arquivo, o CSV pode ter vários no mesmo chegada. Isso é limitação
+    da Central/processar_tick, ou só do _gerar_aleatorio? Se no
+    aleatório a gente pusesse dois Cliente no mesmo tick da agenda, a
+    Central quebraria?
+
+18. Cliente expõe id, tipo, tempo_chegada com @property e SEM setter.
+    O que acontece se no meio da simulação alguém fizer
+    cliente.tempo_chegada = 0? Isso é exigência do PDF ou escolha de
+    vocês — e por que ajuda (ou atrapalha) neste trabalho?
+
+19. vazao = total_atendidos / tempo_decorrido. No modo arquivo com o
+    +100, se todos já foram atendidos no tick 20 e o relógio vai até
+    120, a vazão CAI. Isso significa que o sistema ficou pior depois do
+    tick 20, ou só que o denominador inchou? Como você explicaria isso
+    sem parecer que a métrica está "errada"?
+
+20. No fim da simulação, cada cliente que chegou está em UM destes
+    lugares: (1) já terminou (clientes_atendidos); (2) ainda na fila
+    (total_aguardando); (3) sentado no guichê, atendimento pela metade.
+    O relatório só mostra (1) e (2). Por que "clientes ainda na fila"
+    NÃO conta quem está na mesa? Se o professor perguntar "esse que
+    está sendo atendido agora, onde ele aparece no print?", o que você
+    responde?

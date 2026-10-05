@@ -1,37 +1,5 @@
-'''
 import unittest
 from cliente import Cliente
-
-
-class TestCliente(unittest.TestCase):
-
-    def test_inicializacao_cliente(self):
-        c = Cliente(id_cliente="C001", tipo="comum", tempo_chegada=5, tempo_duracao=3)
-        self.assertEqual(c.id, "C001")
-        self.assertEqual(c.tipo, "comum")
-        self.assertEqual(c.tempo_chegada, 5)
-        self.assertEqual(c.tempo_duracao, 3)
-
-    def test_calculo_tempos_espera_e_sistema(self):
-        # Cliente chega no tick 2 e precisa de 4 ticks de atendimento
-        c = Cliente(id_cliente="C002", tipo="prioritario", tempo_chegada=2, tempo_duracao=4)
-        
-        # Inicia atendimento no tick 5 (esperou do tick 2 ao 5 = 3 ticks)
-        c.registrar_inicio_atendimento(tempo_atual=5)
-        self.assertEqual(c.get_tempo_espera(), 3)
-
-        # Termina atendimento no tick 9 (durou do tick 5 ao 9 = 4 ticks, total no sistema = 7 ticks)
-        c.registrar_fim_atendimento(tempo_atual=9)
-        self.assertEqual(c.get_tempo_total_sistema(), 7)
-
-
-if __name__ == "__main__":
-    unittest.main()
-'''
-
-import unittest
-from cliente import Cliente
-
 
 class TestCliente(unittest.TestCase):
 
@@ -113,11 +81,6 @@ class TestCliente(unittest.TestCase):
         c.registrar_inicio_atendimento(5)
         with self.assertRaises(ValueError):
             c.registrar_fim_atendimento(4)
-
-    def test_str_e_repr(self):
-        c = Cliente("C001", "comum", 2, 3)
-        self.assertEqual(str(c), "Cliente C001 [comum]")
-        self.assertIn("C001", repr(c))
 
 
 if __name__ == "__main__":

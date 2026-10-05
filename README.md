@@ -1,149 +1,57 @@
 # Simulador de filas de atendimento
 
-Trabalho de Programação II (UFSC). Simulação discreta de uma central com filas, atendentes e duas políticas: FIFO e prioridade com anti-starvation.
-
-Este README é provisório.
-
-## Como rodar
+Trabalho de Programação II (UFSC). Simulação discreta de uma central de atendimento:
+clientes chegam, entram na fila da disciplina, são atendidos e o programa imprime métricas.
+Duas políticas: FIFO e prioridade com anti-starvation (3 prioritários seguidos, depois 1 comum).
 
 Python 3, sem bibliotecas extras.
 
+## Como rodar
+
 ```bash
+python3 main.py --help
+
 # modo aleatório (padrão: 1000 ticks, 3 atendentes, FIFO)
 python3 main.py --modo aleatorio --seed 42
 
-# mesma coisa, política com prioridade
 python3 main.py --modo aleatorio --politica prioridade --seed 42
-
-# 1 cliente por tick (1000 chegadas)
-python3 main.py --modo aleatorio --tempo 1000 --prob-chegada 1.0 --seed 42
 
 # passo a passo no terminal
 python3 main.py --modo aleatorio --tempo 50 --verbose --seed 42
 
-# cenários do arquivo
+# cenários em arquivo
 python3 main.py --modo arquivo --entrada dados/cenario1.csv --atendentes 3 --politica fifo
 python3 main.py --modo arquivo --entrada dados/cenario2.csv --atendentes 2 --politica prioridade
 python3 main.py --modo arquivo --entrada dados/cenario3.csv --atendentes 3 --politica fifo
+
+# experimento do enunciado (mesma demanda, muda o N de mesas)
+python3 main.py --modo aleatorio --tempo 10000 --atendentes 2 --seed 42
 ```
-
-No fim o programa espera **ENTER**.
-
 ## Argumentos
 
 | Argumento | Padrão | O que faz |
 |---|---|---|
 | `--modo` | obrigatório | `aleatorio` ou `arquivo` |
 | `--entrada` | — | CSV no modo arquivo (`id,tipo,chegada,duracao`) |
-| `--tempo` | 1000 | duração da simulação no modo aleatório |
+| `--tempo` | 1000 | duração no modo aleatório |
 | `--atendentes` | 3 | número de guichês |
-| `--prob-chegada` | 0.30 | chance de nascer 1 cliente em cada tick |
+| `--prob-chegada` | 0.30 | chance de 1 cliente por tick (aleatório) |
 | `--tempo-min` / `--tempo-max` | 2 / 8 | duração do atendimento |
-| `--prioritarios` | 0.20 | fração de clientes prioritários (modo aleatório) |
+| `--prioritarios` | 0.20 | fração de prioritários (aleatório) |
 | `--politica` | `fifo` | `fifo` ou `prioridade` |
-| `--seed` | — | deixa o experimento repetível |
+| `--seed` | — | deixa o sorteio repetível |
 | `--verbose` | off | imprime cada chegada e atendimento |
 
-## Diagrama de classes
+`--modo arquivo` exige `--entrada`. Valores inválidos (atendente ≤ 0, probabilidade fora de [0,1], etc.) encerram com mensagem.
 
-```mermaid
-classDiagram
-    class Configuracao {
-        +modo
-        +entrada
-        +tempo
-        +atendentes
-        +politica
-        +seed
-        +parse_args()
-        +validar()
-    }
-
-    class Simulacao {
-        +config
-        +agenda
-        +central
-        +executar()
-    }
-
-    class GeradorClientes {
-        +criar_agenda(config)
-    }
-
-    class CentralAtendimento {
-        +atendentes
-        +fila_comum
-        +fila_prioritaria
-        +receber_cliente()
-        +processar_tick()
-        +calcular_metricas()
-    }
-
-    class PoliticaAtendimento {
-        <<abstract>>
-        +enfileirar()
-        +proximo_cliente()
-    }
-
-    class PoliticaFIFO
-    class PoliticaPrioridade {
-        +max_prioritarios
-    }
-
-    class Fila {
-        +enfileira()
-        +desinfileira()
-        +vazia()
-        +cabeca()
-        +tamanho()
-    }
-
-    class Atendente {
-        +id
-        +cliente_atual
-        +esta_livre()
-        +iniciar_atendimento()
-        +processar_unidade_tempo()
-    }
-
-    class Cliente {
-        +id
-        +tipo
-        +tempo_chegada
-        +get_tempo_espera()
-        +get_tempo_total_sistema()
-    }
-
-    class Estatisticas {
-        +calcular(central)
-    }
-
-    class Relatorio {
-        +exibir(metricas)
-    }
-
-    Simulacao --> Configuracao
-    Simulacao --> CentralAtendimento
-    Simulacao ..> GeradorClientes : cria agenda
-    GeradorClientes ..> Cliente : instancia
-    GeradorClientes ..> Configuracao : lê
-    Simulacao ..> Relatorio : imprime
-    CentralAtendimento --> PoliticaAtendimento
-    CentralAtendimento --> Fila : comum e prioritária
-    CentralAtendimento --> Atendente
-    CentralAtendimento --> Cliente
-    CentralAtendimento ..> Estatisticas : fecha as contas
-    PoliticaFIFO --|> PoliticaAtendimento
-    PoliticaPrioridade --|> PoliticaAtendimento
-    Atendente --> Cliente : cliente atual
-```
-
-`main.py` só lê o argparse e chama `Simulacao`. A `Fila` é a da disciplina; ninguém acessa `_cabeca`.
+`main.py` só chama `Configuracao.parse_args()` e `Simulacao.executar()`.
+A espera usa a `Fila` da disciplina (interface pública: `enfileira`, `desinfileira`, `vazia`, `cabeca`, `tamanho`).
 
 ## Políticas
 
-- **FIFO:** todo mundo na mesma fila, ordem de chegada.
-- **Prioridade:** fila comum + fila prioritária. Atende até 3 prioritários seguidos e depois força 1 comum (anti-starvation).
+- **FIFO:** todo mundo na `fila_comum`, ordem de chegada. A `fila_prioritaria` fica vazia.
+- **Prioridade:** prioritário na `fila_prioritaria`, o resto na comum. Depois de 3 prioritários seguidos, se houver comum esperando, atende o comum. Se a comum estiver vazia, segue no prioritário (o contador passa de 3).
+
 
 ## Testes
 
@@ -151,29 +59,30 @@ classDiagram
 python3 -m unittest discover -s testes -v
 ```
 
+- `test_cliente.py` — criação, espera, validações, `eh_prioritario`
+- `test_atendente.py` — livre → ocupado → termina em 2 ticks
+- `test_central.py` — FIFO e anti-starvation
+- `test_simulacao.py` — cenário com `--seed 42`; conservação: chegaram = atendidos + fila + na mesa
+
 ## Estrutura
 
 ```
-main.py              entrada (argparse)
-configuracao.py      opções da linha de comando
-simulacao.py         relógio da simulação
-central.py           coordena filas, guichês e métricas
+main.py              argparse + inicialização
+configuracao.py      lê a linha de comando e valida
+simulacao.py         monta o cenário e anda o relógio
+central.py           um tick: chega, termina, ocupa mesa
 politicas.py         FIFO e prioridade
-fila.py              fila encadeada
+fila.py              fila da disciplina
 cliente.py / atendente.py
 gerador_clientes.py  CSV ou sorteio
-estatisticas.py      métricas do enunciado
+estatisticas.py      contas do enunciado
 relatorio.py         imprime o resumo
-dados/cenario1.csv   pequeno, calculável na mão
-dados/cenario2.csv   rajada de prioritários (anti-starvation)
-dados/cenario3.csv   carga média para experimentos
+dados/               cenario1.csv, cenario2.csv, cenario3.csv
 testes/
 ```
 
 ## Observações
 
-- No modo `arquivo`, a simulação roda até o último horário de chegada **+ 100** ticks. Quem ainda estiver na fila ou no guichê não conta como atendido.
-- No modo `aleatorio`, para no `--tempo`.
-- `tecnico` entra na fila comum (só `prioritario` tem preferência).
-- Experimentos da seção 10 dão para rodar na mão com argparse, por exemplo:
-  `python3 main.py --modo aleatorio --tempo 10000 --atendentes 2 --seed 42`
+- Modo `arquivo`: para no último horário de chegada **+ 100** ticks (folga, não “roda até esvaziar”).
+- Modo `aleatorio`: para no `--tempo`.
+- O aleatório nasce no máximo 1 cliente por tick; o CSV pode ter vários no mesmo horário.

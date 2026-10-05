@@ -6,7 +6,7 @@ def main():
     simulador = Simulacao(config)
     simulador.executar()
     
-    input("[Pressione ENTER para encerrar o programa...]")
+
 
 if __name__ == "__main__":
     main()

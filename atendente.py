@@ -131,12 +131,4 @@ class Atendente:
             return 0.0
         return (self._tempo_total_ocupado / tempo_total_simulacao) * 100.0
 
-    # método de representação
-    def __repr__(self) -> str:
-        status = f"Ocupado (Restante: {self._tempo_restante})" if not self.esta_livre() else "Livre"
-        return f"Atendente(id={self._id!r}, status={status!r})"
-
-    def __str__(self) -> str:
-        return f"Atendente {self._id}"
-
 

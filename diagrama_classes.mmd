@@ -1,0 +1,26 @@
+%%{init: {"theme": "neutral", "flowchart": {"nodeSpacing": 8, "rankSpacing": 18}}}%%
+flowchart TB
+  Configuracao ~~~ Simulacao
+  Simulacao ~~~ GeradorClientes
+  GeradorClientes ~~~ CentralAtendimento
+  CentralAtendimento ~~~ PoliticaAtendimento
+  PoliticaAtendimento ~~~ PoliticaFIFO
+  PoliticaFIFO ~~~ PoliticaPrioridade
+  PoliticaPrioridade ~~~ Fila
+  Fila ~~~ Atendente
+  Atendente ~~~ Cliente
+  Cliente ~~~ Estatisticas
+  Estatisticas ~~~ Relatorio
+
+  Simulacao --> Configuracao
+  Simulacao --> GeradorClientes
+  GeradorClientes -.->|cria| Cliente
+  Simulacao --> CentralAtendimento
+  CentralAtendimento --> PoliticaAtendimento
+  PoliticaFIFO -->|herda| PoliticaAtendimento
+  PoliticaPrioridade -->|herda| PoliticaAtendimento
+  CentralAtendimento -->|2 filas| Fila
+  CentralAtendimento --> Atendente
+  Atendente --> Cliente
+  CentralAtendimento -.->|métricas| Estatisticas
+  Simulacao -.->|imprime| Relatorio

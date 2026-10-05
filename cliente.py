@@ -42,9 +42,7 @@ class Cliente:
         self._tempo_inicio_atendimento: Optional[int] = None
         self._tempo_fim_atendimento: Optional[int] = None
  
-    # ------------------------------------------------------------------
-    # Acesso somente leitura aos atributos
-    # ------------------------------------------------------------------
+   
     @property
     def id(self):
         return self._id
@@ -74,9 +72,7 @@ class Cliente:
         """Única definição de 'cliente prioritário' do sistema (usada pelas políticas)."""
         return self._tipo in self._TIPOS_PRIORITARIOS
  
-    # ------------------------------------------------------------------
-    # Mudanças de estado
-    # ------------------------------------------------------------------
+    
     def registrar_inicio_atendimento(self, tempo_atual: int) -> None:
         """Registra o momento em que o cliente sai da fila e começa a ser atendido."""
         if tempo_atual < self._tempo_chegada:
@@ -91,9 +87,7 @@ class Cliente:
             raise ValueError("O fim do atendimento não pode ser anterior ao seu início.")
         self._tempo_fim_atendimento = tempo_atual
  
-    # ------------------------------------------------------------------
-    # Valores calculados (métodos, pois podem levantar exceção)
-    # ------------------------------------------------------------------
+    
     def get_tempo_espera(self) -> int:
         """
         Retorna o tempo total gasto na fila (início do atendimento - chegada).
@@ -111,13 +105,4 @@ class Cliente:
         if self._tempo_fim_atendimento is None:
             raise RuntimeError(f"Cliente {self._id} ainda não finalizou o atendimento.")
         return self._tempo_fim_atendimento - self._tempo_chegada
- 
-    def __repr__(self) -> str:
-        return (
-            f"Cliente(id={self._id!r}, tipo={self._tipo!r}, "
-            f"chegada={self._tempo_chegada}, duracao={self._tempo_duracao})"
-        )
- 
-    def __str__(self) -> str:
-        return f"Cliente {self._id} [{self._tipo}]"
  

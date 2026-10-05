@@ -35,7 +35,7 @@ class Configuracao:
         parser.add_argument("--verbose", action="store_true")
 
         args = parser.parse_args()
-        config = cls(**vars(args))
+        config = cls(**vars(args)) #Aqui preenche todos os atributos da classe
         config.validar()
         return config
 
