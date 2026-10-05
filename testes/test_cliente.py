@@ -27,13 +27,13 @@ class TestCliente(unittest.TestCase):
 
     def test_parametros_invalidos(self):
         with self.assertRaises(ValueError):
-            Cliente("C001", "comum", -1, 2)   # chegada negativa
+            Cliente("C001", "comum", -1, 2)
         with self.assertRaises(ValueError):
-            Cliente("C001", "comum", 0, 0)    # duração zero
+            Cliente("C001", "comum", 0, 0)
         with self.assertRaises(ValueError):
-            Cliente("C001", "comum", 0, -3)   # duração negativa
+            Cliente("C001", "comum", 0, -3)
         with self.assertRaises(ValueError):
-            Cliente("C001", "   ", 0, 2)      # tipo vazio
+            Cliente("C001", "   ", 0, 2)
 
     def test_eh_prioritario(self):
         self.assertTrue(Cliente("A", "prioritario", 0, 1).eh_prioritario)
@@ -43,14 +43,12 @@ class TestCliente(unittest.TestCase):
         self.assertFalse(Cliente("E", "tecnico", 0, 1).eh_prioritario)
 
     def test_calculo_tempos_espera_e_sistema(self):
-        # Cliente chega no tick 2 e precisa de 4 ticks de atendimento
+        # chega no 2, senta no 5 → espera 3; termina no 9 → 9 - 2 = 7 no sistema
         c = Cliente(id_cliente="C002", tipo="prioritario", tempo_chegada=2, tempo_duracao=4)
 
-        # Inicia atendimento no tick 5 (esperou do tick 2 ao 5 = 3 ticks)
         c.registrar_inicio_atendimento(tempo_atual=5)
         self.assertEqual(c.get_tempo_espera(), 3)
 
-        # Termina atendimento no tick 9 (durou do tick 5 ao 9 = 4 ticks, total no sistema = 7 ticks)
         c.registrar_fim_atendimento(tempo_atual=9)
         self.assertEqual(c.get_tempo_total_sistema(), 7)
 

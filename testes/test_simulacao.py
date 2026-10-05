@@ -24,12 +24,12 @@ class TestSimulacaoCenarioDeterministico(unittest.TestCase):
 
         metricas = simulacao.central.calcular_metricas()
 
-        # Contabiliza os clientes que estão sendo atendidos nos guichês no fim do tempo
+        # quem está no guichê não entra em "ainda na fila"
         em_atendimento = sum(1 for a in simulacao.central.atendentes if not a.esta_livre())
 
         self.assertGreater(metricas["total_chegaram"], 0)
-        
-        # Conservação de clientes: Chegaram = Atendidos + Na Fila + Em Atendimento
+
+        # chegaram = atendidos + fila + mesa
         self.assertEqual(
             metricas["total_chegaram"],
             metricas["total_atendidos"] + metricas["total_aguardando"] + em_atendimento

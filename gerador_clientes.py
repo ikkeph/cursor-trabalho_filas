@@ -5,29 +5,26 @@ from cliente import Cliente
 from configuracao import Configuracao
 
 
+# Monta a agenda {tick: [clientes]}. Só métodos estáticos, não guarda estado.
 class GeradorClientes:
-    """
-    Monta a agenda de chegadas: {tick: [clientes]}.
-    Não guarda estado; só métodos estáticos (não precisa instanciar).
-    """
 
+    # Lê o CSV ou sorteia e agrupa pelo horário de chegada.
     @staticmethod
     def criar_agenda(config: Configuracao) -> Dict[int, List[Cliente]]:
-        """Lê o CSV ou sorteia os clientes e agrupa pelo horário de chegada."""
         if config.modo == "arquivo":
             clientes = GeradorClientes._carregar_arquivo(config.entrada)
         else:
             clientes = GeradorClientes._gerar_aleatorio(config)
 
-        # Vários clientes podem chegar no mesmo tick.
+        # o CSV pode ter vários no mesmo tick; o aleatório no máximo um
         chegadas_por_tick: Dict[int, List[Cliente]] = {}
         for cliente in clientes:
             chegadas_por_tick.setdefault(cliente.tempo_chegada, []).append(cliente)
         return chegadas_por_tick
 
+    # Lê CSV id,tipo,chegada,duracao.
     @staticmethod
     def _carregar_arquivo(caminho: Optional[str]) -> List[Cliente]:
-        """Lê CSV no formato id,tipo,chegada,duracao. Uso interno de criar_agenda."""
         if not caminho:
             sys.exit("Erro: Caminho do arquivo inválido.")
         clientes = []
@@ -35,7 +32,6 @@ class GeradorClientes:
             with open(caminho, "r", encoding="utf-8") as f:
                 for linha in f:
                     linha = linha.strip()
-                    # Pula vazio, comentário e o cabeçalho.
                     if not linha or linha.startswith("#") or linha.lower().startswith("id"):
                         continue
                     partes = [p.strip() for p in linha.split(",")]
@@ -45,9 +41,9 @@ class GeradorClientes:
             sys.exit(f"Erro: Arquivo '{caminho}' não encontrado.")
         return clientes
 
+    # No máximo um cliente por tick. Usa a seed que a Simulacao já plantou.
     @staticmethod
     def _gerar_aleatorio(config: Configuracao) -> List[Cliente]:
-        """Sorteia no máximo um cliente por tick, usando a seed já plantada na Simulacao."""
         clientes = []
         contador_id = 1
         for t in range(config.tempo):

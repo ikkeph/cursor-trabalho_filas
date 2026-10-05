@@ -2,9 +2,11 @@ from typing import Optional
 from cliente import Cliente
 from fila import Fila
 
-#Não tem construtor porque não há atributo comum entre as classes filhas
+
+# Interface das políticas: em qual fila entra e de qual fila sai.
+# Sem estado comum, por isso não tem __init__.
 class PoliticaAtendimento:
-    """Classe base (interface) para as políticas de atendimento."""
+
     def enfileirar(self, cliente: Cliente, fila_comum: Fila, fila_prioritaria: Fila) -> None:
         raise NotImplementedError
 
@@ -12,8 +14,8 @@ class PoliticaAtendimento:
         raise NotImplementedError
 
 
+# Todo mundo na fila comum, ordem de chegada. A prioritária fica vazia.
 class PoliticaFIFO(PoliticaAtendimento):
-    """Política A — FIFO: Todos entram na fila comum e são atendidos por ordem de chegada."""
 
     def enfileirar(self, cliente: Cliente, fila_comum: Fila, fila_prioritaria: Fila) -> None:
         fila_comum.enfileira(cliente)
@@ -24,11 +26,8 @@ class PoliticaFIFO(PoliticaAtendimento):
         return None
 
 
+# Prioritário na fila dele; depois de 3 seguidos, atende 1 comum se houver.
 class PoliticaPrioridade(PoliticaAtendimento):
-    """
-    Política B — Prioridade com Anti-Starvation.
-    Atende até 'max_prioritarios' consecutivos antes de forçar o atendimento de 1 comum.
-    """
 
     def __init__(self, max_prioritarios_consecutivos: int = 3):
         self.max_prioritarios = max_prioritarios_consecutivos
@@ -41,21 +40,19 @@ class PoliticaPrioridade(PoliticaAtendimento):
             fila_comum.enfileira(cliente)
 
     def proximo_cliente(self, fila_comum: Fila, fila_prioritaria: Fila) -> Optional[Cliente]:
-        # Se ambas estiverem vazias
         if fila_prioritaria.vazia() and fila_comum.vazia():
             return None
 
-        # Regra Anti-Starvation: se atingiu o limite de prioritários seguidos e há cliente comum aguardando
+        # anti-starvation: 3 prioritários seguidos e tem comum esperando → comum
         if self.consecutivos_prioritarios >= self.max_prioritarios and not fila_comum.vazia():
             self.consecutivos_prioritarios = 0
             return fila_comum.desinfileira()
 
-        # Atende da fila prioritária se houver cliente
         if not fila_prioritaria.vazia():
             self.consecutivos_prioritarios += 1
             return fila_prioritaria.desinfileira()
 
-        # Se não há prioritários, atende da fila comum
+        # só comuns na fila (o contador zera)
         if not fila_comum.vazia():
             self.consecutivos_prioritarios = 0
             return fila_comum.desinfileira()
@@ -63,8 +60,8 @@ class PoliticaPrioridade(PoliticaAtendimento):
         return None
 
 
+# Devolve FIFO ou Prioridade a partir da string do argparse.
 def criar_politica(nome_politica: str) -> PoliticaAtendimento:
-    """Factory para instanciar a política correta com base no argumento do CLI."""
     nome = nome_politica.lower()
     if nome == "fifo":
         return PoliticaFIFO()

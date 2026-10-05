@@ -2,31 +2,14 @@ from typing import List, Optional
 from cliente import Cliente
 
 
+# Mesa da central: pega um cliente, conta os ticks e devolve quando termina.
 class Atendente:
-    """
-    Representa um servidor ou guichê de atendimento.
-    
-    Atributos:
-        id (int/str): Identificador único do atendente.
-        tipos_atendimento (Optional[List[str]]): Tipos de atendimento que este guichê realiza.
-                                             Se None ou vazio, atende qualquer tipo.
-        cliente_atual (Optional[Cliente]): Cliente em atendimento no momento.
-        tempo_restante (int): Quantidade de unidades de tempo restantes para terminar
-                              o atendimento do cliente atual.
-        total_clientes_atendidos (int): Quantidade acumulada de clientes finalizados.
-        tempo_total_ocupado (int): Total de unidades de tempo em que esteve ocupado.
-    """
 
     def __init__(self, id_atendente, tipos_atendimento: Optional[List[str]] = None):
         self._id = id_atendente
         self._tipos_atendimento = [t.strip().lower() for t in tipos_atendimento] if tipos_atendimento else []
-        
-        # Estado do atendente
         self._cliente_atual: Optional[Cliente] = None
         self._tempo_restante: int = 0
-        
-        # Métricas individuais
-       
         self._total_clientes_atendidos: int = 0
         self._tempo_total_ocupado: int = 0
 
@@ -55,80 +38,48 @@ class Atendente:
         return self._tempo_total_ocupado
 
     def esta_livre(self) -> bool:
-        """Retorna True se o atendente não estiver com nenhum cliente no momento."""
         return self._cliente_atual is None
 
+    # Lista vazia = generalista (é o caso deste trabalho).
     def pode_atender(self, tipo_cliente: str) -> bool:
-        """
-        Verifica se o atendente é capacitado para o tipo de atendimento solicitado.
-        Se a lista de tipos do atendente for vazia, assume-se que atende a todos os tipos.
-        """
         if not self._tipos_atendimento:
             return True
         return tipo_cliente.strip().lower() in self.tipos_atendimento
 
     def iniciar_atendimento(self, cliente: Cliente, tempo_atual: int) -> None:
-        """
-        Associa um cliente ao atendente e registra o tempo de início no cliente.
-        
-        Lança exceção se o atendente já estiver ocupado.
-        """
         if not self.esta_livre():
             raise RuntimeError(f"Atendente {self._id} já está ocupado com o Cliente {self._cliente_atual.id}.")
 
         self._cliente_atual = cliente
         self._tempo_restante = cliente.tempo_duracao
-        
-        # Atualiza o estado do próprio cliente
         cliente.registrar_inicio_atendimento(tempo_atual)
 
+    # Anda 1 tick. Se o tempo restante chegou a 0, devolve o cliente terminado.
     def processar_unidade_tempo(self) -> Optional[Cliente]:
-        """
-        Avança 1 unidade de tempo (tick) na simulação.
-        
-        Se houver cliente sendo atendido:
-        - Decrementa o tempo restante;
-        - Soma 1 ao tempo total ocupado;
-        - Se o tempo restante chegar a 0, finaliza o atendimento e retorna o Cliente concluído;
-        - Caso contrário, retorna None.
-        
-        Se estiver livre, apenas retorna None.
-        """
         if self.esta_livre():
             return None
 
         self._tempo_total_ocupado += 1
         self._tempo_restante -= 1
 
-        # Atendimento concluído neste tick
         if self._tempo_restante == 0:
             return self.finalizar_atendimento()
 
         return None
 
+    # Libera a mesa. O carimbo do fim fica a cargo da Central, no tick atual.
     def finalizar_atendimento(self) -> Cliente:
-        """
-        Finaliza o atendimento do cliente atual, limpa o estado do atendente
-        e incrementa o número total de atendimentos concluídos.
-        """
         if self._cliente_atual is None:
             raise RuntimeError(f"Atendente {self.id} tentou finalizar atendimento sem nenhum cliente ativo.")
 
         cliente_concluido = self._cliente_atual
         self._total_clientes_atendidos += 1
-        
-        # O tempo final será definido pela CentralAtendimento no tick atual
         self._cliente_atual = None
         self._tempo_restante = 0
-
         return cliente_concluido
 
+    # Porcentagem do relógio em que a mesa esteve ocupada.
     def calcular_taxa_utilizacao(self, tempo_total_simulacao: int) -> float:
-        """
-        Calcula a porcentagem de utilização do atendente em relação ao tempo da simulação.
-        """
         if tempo_total_simulacao <= 0:
             return 0.0
         return (self._tempo_total_ocupado / tempo_total_simulacao) * 100.0
-
-

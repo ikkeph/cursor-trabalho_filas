@@ -1,8 +1,7 @@
+# Nó da lista encadeada da Fila.
 class FilaNo():
 
-
-    #Cada nó recebe um dado e um marcador do próximio índice
-    #O valor padrão None representa o fim da fila
+    # dado + ponteiro para o próximo; None = fim da fila
     def __init__(self, dado, indice_proximo = None):
 
         self._dado = dado
@@ -23,6 +22,7 @@ class FilaNo():
 
         self._dado = dado
 
+# Fila da disciplina. A Central só usa enfileira, desinfileira, vazia, cabeca e tamanho.
 class Fila():
 
     def __init__(self):    
@@ -36,8 +36,7 @@ class Fila():
 
         novo_no = FilaNo(elemento)
 
-        #Se a fila estiver vazia, tanto cauda e cabeça apontam pro novo nó.
-        #Como é o primeiro nó, o atr _próximo recebe -1
+        # fila vazia: cabeça e cauda são o mesmo nó
         if self.vazia():
 
             self._cabeca = novo_no
@@ -47,14 +46,8 @@ class Fila():
 
         else:
 
-            #Colocamos a informação de próximo dentro do novo nó
-            
             self._cauda.set_prox(novo_no)
-
-            #Coloca o novo nó no fim da fila
             self._cauda = novo_no
-
-            #
             self._tamanho +=1
 
         
@@ -66,17 +59,11 @@ class Fila():
 
             return None
 
-        #Pegamos o dado que está no nó da cabeça
         dado = self._cabeca.get_dado()
-
-        #Definimos qual o próxino elemento:
-        #É o nó que estava salvo como próximo dentro do nó atual.
-        #Essa informação foi definida na hora de enfileirar.
         self._cabeca = self._cabeca.get_prox()
-
         self._tamanho -= 1
 
-        # Se a fila ficou vazia após a remoção, limpamos a cauda também
+        # último elemento saiu: a cauda também aponta para ninguém
         if self.vazia():
 
             self._cauda = None
@@ -97,7 +84,6 @@ class Fila():
         return self._cabeca.get_dado()
 
  
-    #Retorna falso se não existir nenhum elemento na fila
     def vazia(self):
 
         return self._tamanho == 0
@@ -113,21 +99,10 @@ class Fila():
 
         while no_atual is not None:
 
-            #Um check pra saber se ten próximo
             if no_atual.get_prox() == None:
-
                 print(f'{no_atual.get_dado()} ', end='')
-                
-                #Pula para o próximo nó
-                no_atual = no_atual.get_prox()
-                        
             else:
-
-                
                 print(f'{no_atual.get_dado()} -> ', end='')
+            no_atual = no_atual.get_prox()
 
-                #Pula para o próximo nó
-                no_atual = no_atual.get_prox()
-        
-        # Quebra de linha no final da impressão
         print()

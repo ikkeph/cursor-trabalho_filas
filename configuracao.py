@@ -3,8 +3,11 @@ import sys
 from dataclasses import dataclass
 from typing import Optional
 
+
+# Parâmetros da simulação, lidos da linha de comando.
 @dataclass
 class Configuracao:
+
     modo: str
     entrada: Optional[str] = None
     tempo: int = 1000
@@ -17,6 +20,7 @@ class Configuracao:
     seed: Optional[int] = None
     verbose: bool = False
 
+    # Monta o argparse e devolve uma Configuracao já validada.
     @classmethod
     def parse_args(cls) -> "Configuracao":
         parser = argparse.ArgumentParser(
@@ -35,10 +39,11 @@ class Configuracao:
         parser.add_argument("--verbose", action="store_true")
 
         args = parser.parse_args()
-        config = cls(**vars(args)) #Aqui preenche todos os atributos da classe
+        config = cls(**vars(args))  # preenche os campos com os mesmos nomes dos argumentos
         config.validar()
         return config
 
+    # Encerra o programa se algum valor da linha de comando não fizer sentido.
     def validar(self) -> None:
         if self.atendentes <= 0:
             sys.exit("Erro: O número de atendentes deve ser maior que 0.")

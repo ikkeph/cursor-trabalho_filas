@@ -2,23 +2,20 @@ from typing import Any, Dict, List, Tuple
 from cliente import Cliente
 
 
+# Fecha as contas do enunciado. A Central só guarda histórico; o Relatorio só imprime.
 class Estatisticas:
-    """
-    Fecha as contas do enunciado a partir do estado final da Central.
-    A Central só coleta o histórico; o Relatorio só imprime.
-    """
 
+    # Média e máximo da espera. Lista vazia vira (0.0, 0).
     @staticmethod
     def _resumo_espera(clientes: List[Cliente]) -> Tuple[float, int]:
-        """Média e máximo do tempo de espera; (0.0, 0) se a lista estiver vazia."""
         if not clientes:
             return 0.0, 0
         esperas = [c.get_tempo_espera() for c in clientes]
         return sum(esperas) / len(esperas), max(esperas)
 
+    # Métricas obrigatórias + espera por tipo (só de quem já terminou).
     @staticmethod
     def calcular(central) -> Dict[str, Any]:
-        """Monta o dicionário de métricas obrigatórias (+ espera por tipo)."""
         total_chegaram = len(central.clientes_que_chegaram)
         total_atendidos = len(central.clientes_atendidos)
         total_aguardando = central.tamanho_total_filas()

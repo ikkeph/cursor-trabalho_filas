@@ -1,4 +1,6 @@
+# Imprime o resumo no terminal. Não calcula nada.
 class Relatorio:
+
     @staticmethod
     def exibir(metricas: dict) -> None:
         print("\n" + "=" * 50)
